@@ -461,6 +461,68 @@ int main(void)
 			}
 		#endif
 
+		#if SAFE_4
+			if(!state)	//printing
+			{
+				UART_GotoXY(10, 1);
+				Cy_SCB_UART_PutString(USER_UART_HW, "line # 10) Enter SpeedRef: \r\n");
+				UART_GotoXY(10, 40);
+					
+				state = 1;
+			}
+			else if(state == 1)	//receiving
+			{	
+				read_value = Cy_SCB_UART_Get(USER_UART_HW);
+				if(read_value != CY_SCB_UART_RX_NO_DATA)
+				{
+					if((char)read_value == '\n')
+					{
+						uint16_t getSpeedRef, putSpeedRef;		
+						
+						sscanf(getString, "%hd", &getSpeedRef);			//str to int	
+						putSpeedRef = getSpeedRef + 100;	
+
+						sprintf(putString, "%d", putSpeedRef);			//int to str
+						charToBeXmitted = strlen(putString);
+
+						state = 2;
+					}
+					else 
+					{
+						getString[charReceived++] = (char)read_value;
+					}
+				}
+			}
+			else if(state == 2)	//received & echo-back
+			{
+				static uint8_t charXmitted = 0;
+				if(charXmitted < charToBeXmitted)	
+				{
+					count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+			        if(count == 0ul)
+			        {
+			          	handle_error();
+			        }
+				}
+				else 
+				{
+					charXmitted = 0;
+					state = 3;
+				}
+			}
+			else if(state == 3)	//reset state
+			{
+				charReceived 	= 0;
+				charToBeXmitted = 0;
+				stateInit 		= 0;
+				memset(getString, 0, sizeof(getString));
+				memset(getString, 0, sizeof(putString));
+
+				loopCount++;
+				state = 0;
+			}
+		#endif
+
 		#if 1//SAFE_4
 			if(!state)	//printing
 			{
@@ -522,7 +584,7 @@ int main(void)
 				state = 0;
 			}
 		#endif
-		}
+	}
 }
 
 /* [] END OF FILE */
