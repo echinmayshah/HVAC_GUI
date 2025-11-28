@@ -108,31 +108,64 @@ uint32_t count;
 //SAFE_3 SpeedRef updated val cont display
 //SAFE_4 display SpeedRef_Xmitted = (SpeedRef_Received + 100); - using sprintf & sscanf
 //SAFE_5 entire multi-level menu
+//SAFE_6 beautification(SAFE_5);
+//SAFE_7 in-plan
+		//-> direct entry to observation_menu & back from observation menu, 
+		//-> delay_fun instaed of for(;;) 
+		//-> function_calls instead of long instruction cycle
+			
 
 //SAFE_1 to SAFE_4 are raw materials for menu design
 
-#define SAFE_0 0
-#define SAFE_1 0
-#define SAFE_2 0
-#define SAFE_3 0
-#define SAFE_4 0
-#define SAFE_5 1
+#define SAFE_0 	0
+#define SAFE_1 	0
+#define SAFE_2 	0
+#define SAFE_3 	0
+#define SAFE_4 	0
+#define SAFE_5 	0
+#define SAFE_6 	0
+#define SAFE_7 	1
 
 #if SAFE_0
 	uint8_t myIndex = 0;
 	char tempString[100] = {0};
 #endif
 
-#if SAFE_5 
+#if SAFE_5 || SAFE_6 || SAFE_7
 	uint32_t speedCmd = 100, speedRef = 200, 	speedFdb = 300, mode = 400, temprature = 500, greenLED = 1, redLED = 0, fault = 600;
 	
 	uint8_t menuLevel = 0;
 	bool goAhead = 0;
 	uint8_t loopCount = 0;
-	uint8_t loopCount_0 = 0;
 
 	//static uint8_t userInput[menuLevel][data] = {0};
 	uint8_t userInput[2][1] = {0};
+
+	#define UB_DELAY_TICK_THRESHOLD   (10000UL)
+	
+	bool Delay_NonBlocking(uint32_t requiredDelay)
+	{		
+	    static uint32_t iDel = 0U;
+	    static uint32_t jDel = 0U;
+	
+	    if (iDel < requiredDelay)
+	    {
+	        jDel++;
+	        if (jDel >= 10000U)
+	        {
+	            iDel++;
+	            jDel = 0U;
+	        }
+	    }
+	    else
+	    {
+	        iDel = 0U;
+	        jDel = 0U;
+	        return true;
+	    }
+	
+	    return false;
+	}
 #endif
 
 void UART_GotoXY(uint8_t row, uint8_t col)
@@ -142,6 +175,68 @@ void UART_GotoXY(uint8_t row, uint8_t col)
     sprintf(buffer, "\x1B[%d;%dH", row, col);
 	Cy_SCB_UART_PutString(USER_UART_HW, buffer);
 }
+
+#if SAFE_7
+	#define MIN_TEMPERATURE 20
+	#define MAX_TEMPERATURE 27
+	
+	static inline uint32_t random_range(uint32_t min, uint32_t max)
+	{
+	    return (rand() % (max - min + 1)) + min;
+	}
+	
+	uint32_t getParaVal(uint8_t loopCount)
+	{
+	    uint32_t getNum = 0U;
+	
+	    switch (loopCount)
+	    {
+	        case 0:
+	            speedCmd = random_range(1, 1000);
+	            getNum = speedCmd;
+	            break;
+	
+	        case 1:
+	            speedRef = random_range(1, 1000);
+	            if (speedRef > speedCmd)
+	                speedRef = speedCmd;
+	            getNum = speedRef;
+	            break;
+	
+	        case 2:
+	            speedFdb = random_range(1, 1000);
+	            getNum = speedFdb;
+	            break;
+	
+	        case 3:
+	            mode = random_range(1, 5);
+	            getNum = mode;
+	            break;
+	
+	        case 4:
+	            uint32_t temp = random_range(1, MAX_TEMPERATURE);
+	            temprature = (temp < MIN_TEMPERATURE) ? MIN_TEMPERATURE : temp;
+	            getNum = temprature;
+	        	break;
+	
+	        case 5:
+	            getNum = greenLED;
+	            break;
+	
+	        case 6:
+	            getNum = redLED;
+	            break;
+	
+	        case 7:
+	        default:
+	            fault = random_range(1, 5);
+	            getNum = fault;
+	            break;
+	    }
+
+		return(getNum);
+	}
+#endif
 
 int main(void)
 {
@@ -174,7 +269,7 @@ int main(void)
 
     for(; ;)
     {
-		#if SAFE_0//1
+		#if SAFE_0
 			if(!state)	//printing
 			{
 				if(stateInit == 0)	
@@ -280,7 +375,7 @@ int main(void)
 			}
 		#endif
 
-		#if SAFE_1//1
+		#if SAFE_1
 			if(!state)	//printing
 			{
 				if(stateInit == 0)	
@@ -550,22 +645,26 @@ int main(void)
 				if(!state)	//printing
 				{
 					UART_GotoXY(1, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "line # 1) ************************************************************\r\n");
-				    Cy_SCB_UART_PutString(USER_UART_HW, "line # 2) HVAC Motor Control GUI\r\n");
-				    Cy_SCB_UART_PutString(USER_UART_HW, "line # 3) ************************************************************\r\n");
-					
-					UART_GotoXY(7, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "\r\n");
-					UART_GotoXY(8, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "line # 8) Menu level 0 \r\n");
-					UART_GotoXY(10, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "line # 10) Enter 1 to start/stop motor \r\n");
-					UART_GotoXY(11, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "line # 11) Enter 2 for speedCmd \r\n");
-					UART_GotoXY(13, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "line # 13) your input(followed by enter)?: \r\n");
-					UART_GotoXY(13, 45);	//go to line # 13 to take input from user
-						
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 1) ************************************************************\r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# 2) HVAC Motor Control GUI\r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# 3) ************************************************************\r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 4) \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 5) \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 6) \r\n");
+					//UART_GotoXY(7, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 7) \r\n");
+					//UART_GotoXY(8, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 8) Main-Menu \r\n");
+					//UART_GotoXY(9, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 9) Enter you choice (followed by enter)\r\n");
+					//UART_GotoXY(10, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 10) Enter 1 to start/stop motor \r\n");
+					//UART_GotoXY(11, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 11) Enter 2 for speedCmd \r\n");
+					//UART_GotoXY(12, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# 12) your input: \r\n");
+					UART_GotoXY(12, 45);
+		
 					state = 1;
 				}
 				else if(state == 1)	//receiving
@@ -649,6 +748,11 @@ int main(void)
 				{
 					if(userInput[0][0] == 1)		//start/stop
 					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "line # 1) ************************************************************\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "line # 2) HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "line # 3) ************************************************************\r\n");
+						
 						UART_GotoXY(7, 1);
 						Cy_SCB_UART_PutString(USER_UART_HW, "\r\n");
 						UART_GotoXY(8, 1);
@@ -794,24 +898,40 @@ int main(void)
 					}
 					else if(init == 1)
 					{
-						UART_GotoXY(9, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "\r\n");
-						UART_GotoXY(10, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 10) speedCmd: \r\n");
-						UART_GotoXY(11, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 11) speedRef: \r\n");
-						UART_GotoXY(12, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 12) speedFdb: \r\n");
-						UART_GotoXY(13, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 13) mode: \r\n");
-						UART_GotoXY(14, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 14) temprature: \r\n");
-						UART_GotoXY(15, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 15) greenLED: \r\n");
-						UART_GotoXY(16, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 16) redLED: \r\n");
-						UART_GotoXY(17, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "line # 17) fault: \r\n");
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 1) ************************************************************\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# 2) HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# 3) ************************************************************\r\n");
+						
+						//UART_GotoXY(4, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 4) \r\n");
+						//UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 5) \r\n");
+						//UART_GotoXY(6, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 6) \r\n");
+						//UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 7) \r\n");
+						//UART_GotoXY(8, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 8) \r\n");
+						//UART_GotoXY(9, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 9) \r\n");
+
+						//UART_GotoXY(10, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 10) speedCmd: \r\n");
+						//UART_GotoXY(11, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 11) speedRef: \r\n");
+						//UART_GotoXY(12, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 12) speedFdb: \r\n");
+						//UART_GotoXY(13, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 13) mode: \r\n");
+						//UART_GotoXY(14, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 14) temprature: \r\n");
+						//UART_GotoXY(15, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 15) greenLED: \r\n");
+						//UART_GotoXY(16, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 16) redLED: \r\n");
+						//UART_GotoXY(17, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# 17) fault: \r\n");
 
 						for(uint32_t i=0; i<10000; i++)
 							for(uint32_t i=0; i<10000; i++);
@@ -835,22 +955,31 @@ int main(void)
 					
 					if(loopCount == 0)
 					{
+						speedCmd = (rand() % 1000) + 1;
 						getNum = speedCmd;
 					}
 					else if(loopCount == 1)
 					{
+						speedRef = (rand() % 1000) + 1;
+						if(speedRef >= speedCmd)
+							speedRef = speedCmd;
 						getNum = speedRef;
 					}
 					else if(loopCount == 2)
 					{
+						speedFdb = (rand() % 1000) + 1;
 						getNum = speedFdb;
 					}
 					else if(loopCount == 3)
 					{
+						mode = (rand() % 5) + 1;
 						getNum = mode;
 					}
 					else if(loopCount == 4)
 					{
+						temprature = (rand() % 27) + 1;
+						if(temprature <= 20)
+							temprature = 20;
 						getNum = temprature;
 					}
 					else if(loopCount == 5)
@@ -863,6 +992,7 @@ int main(void)
 					}
 					else //if(loopCount == 7)
 					{
+						fault = (rand() % 5) + 1;
 						getNum = fault;
 					}
 					#endif
@@ -901,7 +1031,12 @@ int main(void)
 					memset(putString, 0, sizeof(putString));
 				
 
+					#if 0
 					for(uint32_t i=0; i<10000; i++)
+						for(uint32_t i=0; i<10000; i++);
+					#endif
+
+					for(uint32_t i=0; i<1000; i++)
 						for(uint32_t i=0; i<10000; i++);
 
 					loopCount += 1;
@@ -911,7 +1046,1188 @@ int main(void)
 					}
 					
 					state = 0;
-					loopCount_0++;
+				}
+			}
+		#endif
+
+		#if SAFE_6
+			if(menuLevel == 0)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//printing
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0 - Main Menu \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter you choice (followed by enter) \r\n");
+					
+					UART_GotoXY(8, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop motor \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd \r\n");
+					
+					UART_GotoXY(11, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+					UART_GotoXY(11, 16);
+		
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+					if(read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+						if((char)read_value == '\n')
+						{
+							uint32_t getNum, putNum;		
+						
+							sscanf(getString, "%lu", &getNum);			//str to int (getString to getNum)
+							
+							if(getNum == 1 || getNum == 2)
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userInput[menuLevel][0] = putNum;		//userInput[menuLevel][0] = putNum;
+								userInput[0][0] = putNum;				//userInput[menuLevel][0] = putNum;
+								goAhead = 1;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+								goAhead = 0;
+							}
+							
+							charToBeXmitted = strlen(putString);
+							state = 2;
+						}
+						else 
+						{
+							getString[charReceived++] = (char)read_value;
+						}
+					}
+				}
+				else if(state == 2)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+	
+					if(goAhead == false)
+					{
+						menuLevel = 0;
+					}
+					else 
+					{
+						menuLevel++;
+					}
+					
+					for(uint32_t i=0; i<10000; i++)
+						for(uint32_t j=0; j<10000; j++);
+					
+					Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	//clear screen
+				}
+			}
+			else if(menuLevel == 1)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//printing
+				{
+					if(userInput[0][0] == 1)		//start/stop
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.0 - Start/Stop Motor Menu \r\n");
+						
+						UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+					}
+					else if(userInput[0][0] == 2)	//speedCmd
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.1 - speedCmd Menu \r\n");
+
+						UART_GotoXY(7, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 9 to take input from user
+					}
+						
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+					if(read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+						if((char)read_value == '\n')
+						{
+							uint32_t getNum, putNum;		
+						
+							sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
+							
+							if(userInput[0][0] == 1)	//start/stop
+							{
+								if(getNum == 1 || getNum == 2)
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							else if(userInput[0][0] == 2)	//speedRef 
+							{
+								if(getNum)	//if non-Zero
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							
+							charToBeXmitted = strlen(putString);
+							state = 2;
+						}
+						else 
+						{
+							getString[charReceived++] = (char)read_value;
+						}
+					}
+				}
+				else if(state == 2)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+	
+					if(goAhead == false)
+					{
+						menuLevel = 0;
+					}
+					else 
+					{
+						menuLevel++;
+					}
+		
+					#if 1
+						for(uint32_t i=0; i<10000; i++)
+							for(uint32_t j=0; j<10000; j++);
+					
+						Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	//clear screen	//TODO
+						Cy_SCB_UART_PutString(USER_UART_HW, "\r\n");
+					#endif
+				}
+			}
+			else if(menuLevel == 2)	//run-time menu
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//printing
+				{
+					static uint8_t init = 0;
+					
+					if(!init)
+					{
+						if(userInput[0][0] == 1)			//start/stop
+						{
+							if(userInput[1][0] == 1)		//start
+							{
+								speedCmd = 500;
+							}
+							else if(userInput[1][0] == 2)	//stop
+							{
+								speedCmd = 0;
+							}
+						}
+						else if(userInput[0][0] == 2)		//speedCmd
+						{
+							speedCmd = userInput[1][0];
+						}
+
+						init += 1;
+					}
+					else if(init == 1)
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(8, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Parameters \r\n");
+						UART_GotoXY(8, 35);
+						Cy_SCB_UART_PutString(USER_UART_HW, "Value \r\n");
+
+						UART_GotoXY(10, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedCmd: \r\n");
+						//UART_GotoXY(11, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedRef: \r\n");
+						//UART_GotoXY(12, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedFdb: \r\n");
+						//UART_GotoXY(13, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# mode: \r\n");
+						//UART_GotoXY(14, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# temprature: \r\n");
+						//UART_GotoXY(15, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# greenLED: \r\n");
+						//UART_GotoXY(16, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# redLED: \r\n");
+						//UART_GotoXY(17, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# fault: \r\n");
+
+						for(uint32_t i=0; i<10000; i++)
+							for(uint32_t i=0; i<10000; i++);
+						
+						loopCount = 0;
+						init++;
+					}
+					else 
+					{
+						//Cy_SCB_UART_ClearTxFifo(USER_UART_HW);
+						//Cy_SCB_UART_ClearRxFifo(USER_UART_HW);
+						
+						UART_GotoXY((loopCount + 10), 35);
+						state = 1;
+					}
+				}
+				else if(state == 1)	//inputing
+				{	
+					#if 1
+					uint32_t getNum, putNum;	
+					
+					if(loopCount == 0)
+					{
+						speedCmd = (rand() % 1000) + 1;
+						getNum = speedCmd;
+					}
+					else if(loopCount == 1)
+					{
+						speedRef = (rand() % 1000) + 1;
+						if(speedRef >= speedCmd)
+							speedRef = speedCmd;
+						getNum = speedRef;
+					}
+					else if(loopCount == 2)
+					{
+						speedFdb = (rand() % 1000) + 1;
+						getNum = speedFdb;
+					}
+					else if(loopCount == 3)
+					{
+						mode = (rand() % 5) + 1;
+						getNum = mode;
+					}
+					else if(loopCount == 4)
+					{
+						temprature = (rand() % 27) + 1;
+						if(temprature <= 20)
+							temprature = 20;
+						getNum = temprature;
+					}
+					else if(loopCount == 5)
+					{
+						getNum = greenLED;
+					}
+					else if(loopCount == 6)
+					{
+						getNum = redLED;
+					}
+					else //if(loopCount == 7)
+					{
+						fault = (rand() % 5) + 1;
+						getNum = fault;
+					}
+					#endif
+					
+					//strcpy(getString, "12345");
+					//sscanf(getString, "%lu", &getNum);		//str to int (getString to getNum)		
+					putNum = getNum;
+					sprintf(putString, "%lu", putNum);			//int to str (putNum to putString)						
+					
+					charToBeXmitted = strlen(putString);
+
+					state = 2;
+				}
+				else if(state == 2)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+				
+					#if 0
+					for(uint32_t i=0; i<10000; i++)
+						for(uint32_t i=0; i<10000; i++);
+					#endif
+
+					for(uint32_t i=0; i<1000; i++)
+						for(uint32_t i=0; i<10000; i++);
+
+					loopCount += 1;
+					if(loopCount >= 8)
+					{
+						loopCount = 0;
+					}
+					
+					state = 0;
+				}
+			}
+		#endif
+
+		#if 0//SAFE_7-safe copy
+			if(menuLevel == 0)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Menu_M0)
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0 - Main Menu \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter you choice (followed by enter) \r\n");
+					
+					UART_GotoXY(8, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop motor \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd \r\n");
+					
+					UART_GotoXY(11, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+					UART_GotoXY(11, 16);
+		
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+					if(read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+						if((char)read_value == '\n')
+						{
+							uint32_t getNum, putNum;		
+						
+							sscanf(getString, "%lu", &getNum);			//str to int (getString to getNum)
+							
+							if(getNum == 1 || getNum == 2)
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userInput[menuLevel][0] = putNum;		//userInput[menuLevel][0] = putNum;
+								userInput[0][0] = putNum;				//userInput[menuLevel][0] = putNum;
+								goAhead = 1;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+								goAhead = 0;
+							}
+							
+							charToBeXmitted = strlen(putString);
+							
+							state = 2;
+						}
+						else 
+						{
+							getString[charReceived++] = (char)read_value;
+						}
+					}
+				}
+				else if(state == 2)	//response received-echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+	
+					if(goAhead == false)
+					{
+						menuLevel = 0;
+					}
+					else 
+					{
+						menuLevel++;
+					}
+					
+					Delay_NonBlocking(1e3);
+					//for(uint32_t i=0; i<10000; i++)
+						//for(uint32_t j=0; j<10000; j++);
+					
+					Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	//clear screen
+				}
+			}
+			else if(menuLevel == 1)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Menu_M0.0/M0.1)
+				{
+					if(userInput[0][0] == 1)		//start/stop
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.0 - Start/Stop Motor Menu \r\n");
+						
+						UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+					}
+					else if(userInput[0][0] == 2)	//speedCmd
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.1 - speedCmd Menu \r\n");
+
+						UART_GotoXY(7, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 9 to take input from user
+					}
+						
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+					if(read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+						if((char)read_value == '\n')
+						{
+							uint32_t getNum, putNum;		
+						
+							sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
+							
+							if(userInput[0][0] == 1)	//start/stop
+							{
+								if(getNum == 1 || getNum == 2)
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							else if(userInput[0][0] == 2)	//speedRef 
+							{
+								if(getNum)	//if non-Zero
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							
+							charToBeXmitted = strlen(putString);
+							state = 2;
+						}
+						else 
+						{
+							getString[charReceived++] = (char)read_value;
+						}
+					}
+				}
+				else if(state == 2)	//response received-echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+	
+					if(goAhead == false)
+					{
+						menuLevel = 0;
+					}
+					else 
+					{
+						menuLevel++;
+					}
+		
+					Delay_NonBlocking(1e3);
+					//for(uint32_t i=0; i<10000; i++)
+						//for(uint32_t j=0; j<10000; j++);
+				
+					Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	//clear screen
+					//Cy_SCB_UART_PutString(USER_UART_HW, "\r\n");
+				}
+			}
+			else if(menuLevel == 2)	//run-time menu
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Observation Menu)
+				{
+					static uint8_t init = 0;
+					
+					if(!init)
+					{
+						if(userInput[0][0] == 1)			//start/stop
+						{
+							if(userInput[1][0] == 1)		//start
+							{
+								speedCmd = 500;
+							}
+							else if(userInput[1][0] == 2)	//stop
+							{
+								speedCmd = 0;
+							}
+						}
+						else if(userInput[0][0] == 2)		//speedCmd
+						{
+							speedCmd = userInput[1][0];
+						}
+
+						init += 1;
+					}
+					else if(init == 1)
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(8, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Parameters \r\n");
+						UART_GotoXY(8, 35);
+						Cy_SCB_UART_PutString(USER_UART_HW, "Value \r\n");
+
+						UART_GotoXY(10, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedCmd: \r\n");
+						//UART_GotoXY(11, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedRef: \r\n");
+						//UART_GotoXY(12, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedFdb: \r\n");
+						//UART_GotoXY(13, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# mode: \r\n");
+						//UART_GotoXY(14, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# temprature: \r\n");
+						//UART_GotoXY(15, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# greenLED: \r\n");
+						//UART_GotoXY(16, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# redLED: \r\n");
+						//UART_GotoXY(17, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# fault: \r\n");
+
+						Delay_NonBlocking(1e3);
+						//for(uint32_t i=0; i<10000; i++)
+							//for(uint32_t j=0; j<10000; j++);
+						
+						loopCount = 0;
+						init++;
+					}
+					else 
+					{
+						UART_GotoXY((loopCount + 10), 35);	//go-for parameters-print
+						state = 1;
+					}
+				}
+				else if(state == 1)	//inputing
+				{	
+					#if 1
+					uint32_t getNum, putNum;	
+					
+					if(loopCount == 0)
+					{
+						speedCmd = (rand() % 1000) + 1;
+						getNum = speedCmd;
+					}
+					else if(loopCount == 1)
+					{
+						speedRef = (rand() % 1000) + 1;
+						if(speedRef >= speedCmd)
+							speedRef = speedCmd;
+						getNum = speedRef;
+					}
+					else if(loopCount == 2)
+					{
+						speedFdb = (rand() % 1000) + 1;
+						getNum = speedFdb;
+					}
+					else if(loopCount == 3)
+					{
+						mode = (rand() % 5) + 1;
+						getNum = mode;
+					}
+					else if(loopCount == 4)
+					{
+						temprature = (rand() % 27) + 1;
+						if(temprature <= 20)
+							temprature = 20;
+						getNum = temprature;
+					}
+					else if(loopCount == 5)
+					{
+						getNum = greenLED;
+					}
+					else if(loopCount == 6)
+					{
+						getNum = redLED;
+					}
+					else //if(loopCount == 7)
+					{
+						fault = (rand() % 5) + 1;
+						getNum = fault;
+					}
+					#endif
+					
+					//strcpy(getString, "12345");
+					//sscanf(getString, "%lu", &getNum);		//str to int (getString to getNum)		
+					putNum = getNum;
+					sprintf(putString, "%lu", putNum);			//int to str (putNum to putString)						
+					
+					charToBeXmitted = strlen(putString);
+
+					state = 2;
+				}
+				else if(state == 2)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					charReceived 	= 0;
+					charToBeXmitted = 0;
+					memset(getString, 0, sizeof(getString));
+					memset(putString, 0, sizeof(putString));
+				
+					Delay_NonBlocking(1e3);
+					//for(uint32_t i=0; i<1000; i++)
+						//for(uint32_t j=0; j<10000; j++);
+
+					loopCount += 1;
+					if(loopCount >= 8)
+					{
+						loopCount = 0;
+					}
+					
+					state = 0;
+				}
+			}
+		#endif
+
+		#if SAFE_7
+			if(menuLevel == 0)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Menu_M0)
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0 - Main Menu \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter you choice (followed by enter) \r\n");
+					
+					UART_GotoXY(8, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop motor \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd \r\n");
+					
+					UART_GotoXY(11, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+					UART_GotoXY(11, 16);
+		
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+
+					if (read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+					    char rx = (char)read_value;
+					
+					    if (rx == '\n')
+					    {
+					        uint32_t getNum = 0U;
+					        uint32_t putNum = 0U;
+					
+					        getString[charReceived] = '\0';        /* terminate safely */
+					        charReceived = 0U;
+					
+					        /* Convert string to integer */
+					        if (sscanf(getString, "%lu", &getNum) == 1)
+					        {
+					            if ((getNum == 1U) || (getNum == 2U))
+					            {
+					                putNum = getNum;
+					                (void)sprintf(putString, "%lu", putNum);
+					
+					                userInput[0][0] = putNum;
+					
+					                goAhead = 1U;
+					            }
+					            else
+					            {
+					                (void)strcpy(putString, "invalid input");
+					                goAhead = 0U;
+					            }
+					        }
+					        else
+					        {
+					            (void)strcpy(putString, "invalid input");
+					            goAhead = 0U;
+					        }
+					
+					        charToBeXmitted = (uint8_t)strlen(putString);
+					        state = 2U;
+					    }
+					    else
+					    {
+					        /* Protect against buffer overflow */
+					        if (charReceived < (sizeof(getString) - 1U))
+					        {
+					            getString[charReceived++] = rx;
+					        }
+					    }
+					}
+				}
+				else if(state == 2)	//response received-echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{					
+					if(Delay_NonBlocking(1000U))
+					{
+						charReceived 	= 0;
+						charToBeXmitted = 0;
+						memset(getString, 0, sizeof(getString));
+						memset(putString, 0, sizeof(putString));
+		
+						// Update menu level
+        				menuLevel = (goAhead) ? (menuLevel + 1) : 0;
+					
+						// Clear terminal screen
+						Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	
+					}
+				}
+			}
+			else if(menuLevel == 1)
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Menu_M0.0/M0.1)
+				{
+					if(userInput[0][0] == 1)		//start/stop
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.0 - Start/Stop Motor Menu \r\n");
+						
+						UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+					}
+					else if(userInput[0][0] == 2)	//speedCmd
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.1 - speedCmd Menu \r\n");
+
+						UART_GotoXY(7, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd \r\n");
+						
+						UART_GotoXY(10, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						UART_GotoXY(10, 16);	//go to line # 9 to take input from user
+					}
+						
+					state = 1;
+				}
+				else if(state == 1)	//receiving
+				{	
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+					if(read_value != CY_SCB_UART_RX_NO_DATA)
+					{
+						if((char)read_value == '\n')
+						{
+							uint32_t getNum, putNum;		
+						
+							sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
+							
+							if(userInput[0][0] == 1)	//start/stop
+							{
+								if(getNum == 1 || getNum == 2)
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							else if(userInput[0][0] == 2)	//speedRef 
+							{
+								if(getNum)	//if non-Zero
+								{
+									putNum = getNum;
+									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+									userInput[1][0] = getNum;				//userInput[menuLevel][0] = getNum;
+									goAhead = 1;
+								}
+								else 
+								{
+									strcpy(putString, "invalid input");
+									goAhead = 0;
+								}
+							}
+							
+							charToBeXmitted = strlen(putString);
+							state = 2;
+						}
+						else 
+						{
+							getString[charReceived++] = (char)read_value;
+						}
+					}
+				}
+				else if(state == 2)	//response received-echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					if(Delay_NonBlocking(1000U))
+					{
+						charReceived 	= 0;
+						charToBeXmitted = 0;
+						memset(getString, 0, sizeof(getString));
+						memset(putString, 0, sizeof(putString));
+		
+						#if 0
+						if(goAhead == false)
+						{
+							menuLevel = 0;
+						}
+						else 
+						{
+							menuLevel++;
+						}
+						#endif
+						//menuLevel += goAhead ? 1: (menuLevel = 0);
+						goAhead ? (menuLevel += 1) : (menuLevel = 0);
+					
+						Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	//clear screen
+					}
+				}
+			}
+			else if(menuLevel == 2)	//run-time menu
+			{
+				static uint8_t state = 0;
+
+				if(!state)	//menu-printing (Observation Menu)
+				{
+					static uint8_t init = 0;
+					
+					if(!init)
+					{
+						if(userInput[0][0] == 1)			//start/stop
+						{
+							if(userInput[1][0] == 1)		//start
+							{
+								speedCmd = 500;
+							}
+							else if(userInput[1][0] == 2)	//stop
+							{
+								speedCmd = 0;
+							}
+						}
+						else if(userInput[0][0] == 2)		//speedCmd
+						{
+							speedCmd = userInput[1][0];
+						}
+
+						init++;
+					}
+					else if(init == 1)
+					{
+						UART_GotoXY(1, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+
+						UART_GotoXY(8, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Parameters \r\n");
+						UART_GotoXY(8, 35);
+						Cy_SCB_UART_PutString(USER_UART_HW, "Value \r\n");
+
+						UART_GotoXY(10, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedCmd: \r\n");
+						//UART_GotoXY(11, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedRef: \r\n");
+						//UART_GotoXY(12, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# speedFdb: \r\n");
+						//UART_GotoXY(13, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# mode: \r\n");
+						//UART_GotoXY(14, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# temprature: \r\n");
+						//UART_GotoXY(15, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# greenLED: \r\n");
+						//UART_GotoXY(16, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# redLED: \r\n");
+						//UART_GotoXY(17, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# fault: \r\n");
+
+						init++;
+					}
+					else if(init == 2)
+					{
+						if(Delay_NonBlocking(100U))
+						{
+							init++;
+						}
+					}
+					else 
+					{
+						UART_GotoXY((loopCount + 10), 35);	//goToXY for parameters-print
+						state = 1;
+					}
+				}
+				else if(state == 1)	//inputing
+				{	
+					uint32_t putNum = getParaVal(loopCount);;
+					//sprintf(putString, "%lu", putNum);			//int to str (putNum to putString)						
+					//charToBeXmitted = strlen(putString);
+					charToBeXmitted = (uint8_t)sprintf(putString, "%lu", putNum);
+
+					state = 2;
+				}
+				else if(state == 2)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0;
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0ul)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0;
+						state = 3;
+					}
+				}
+				else if(state == 3)	//reset state
+				{
+					if(Delay_NonBlocking(100U))
+					{
+						charReceived 	= 0;
+						charToBeXmitted = 0;
+						memset(getString, 0, sizeof(getString));
+						memset(putString, 0, sizeof(putString));
+	
+						if(++loopCount >= 8)
+						{
+							loopCount = 0;
+						}
+						
+						state = 0;
+					}
 				}
 			}
 		#endif
