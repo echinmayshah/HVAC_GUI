@@ -1841,9 +1841,9 @@ int main(void)
 		#if SAFE_8
 			if(menuLevel == 0U)
 			{
-				static uint8_t state = 0;
+				static uint8_t state = 0U;
 
-				if(!state)	//menu-printing (Menu_M0)
+				if(state == 0U)	//menu-printing (Menu_M0)
 				{
 					UART_GotoXY(1, 1);
 					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
@@ -1851,7 +1851,7 @@ int main(void)
 				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
 
 					UART_GotoXY(5, 1);
-					Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0 - Main Menu \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Page_0 - Main Page \r\n");
 					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter you choice (followed by enter) \r\n");
 					
 					UART_GotoXY(8, 1);
@@ -1862,9 +1862,10 @@ int main(void)
 					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");	//\r\n");
 					UART_GotoXY(11, 16);
 		
-					state = 1;
+					goAhead = false;
+					state = 1U;
 				}
-				else if(state == 1)	//receiving
+				else if(state == 1U)	//receiving
 				{
 					read_value = Cy_SCB_UART_Get(USER_UART_HW);
 
@@ -1877,105 +1878,100 @@ int main(void)
 					        uint32_t getNum = 0U;
 					        uint32_t putNum = 0U;
 					
-					        getString[charReceived] = '\0';        /* terminate safely */
+					        getString[charReceived] = '\0'; 	//safely termination
 					        charReceived = 0U;
 					
-					        /* Convert string to integer */
-					        if (sscanf(getString, "%lu", &getNum) == 1)
+					        if (sscanf(getString, "%lu", &getNum) == 1U)	//string to integer
 					        {
 					            if ((getNum == 1U) || (getNum == 2U))
 					            {
 					                putNum = getNum;
 					                (void)sprintf(putString, "%lu", putNum);
-					
 					                userDataInput[0][0] = putNum;
-					
-					                goAhead = 1U;
+					                goAhead = true;
 					            }
 					            else
 					            {
 					                (void)strcpy(putString, "invalid input");
-					                goAhead = 0U;
 					            }
 					        }
 					        else
 					        {
 					            (void)strcpy(putString, "invalid input");
-					            goAhead = 0U;
 					        }
-					
+
 					        charToBeXmitted = (uint8_t)strlen(putString);
 					        state = 2U;
 					    }
 					    else
 					    {
-					        /* Protect against buffer overflow */
-					        if (charReceived < (sizeof(getString) - 1U))
+					        if (charReceived < (sizeof(getString) - 1U))	 // avoid buffer overflow
 					        {
 					            getString[charReceived++] = rx;
 					        }
 					    }
 					}
-					else 
+					else
 					{
 						#if 1
-						    if(Delay_NonBlocking(30e3))
+						    if(Delay_NonBlocking(5000U))
 						    {
-					            charReceived 	= 0;
-								charToBeXmitted = 0;
-								memset(getString, 0, sizeof(getString));
-								memset(putString, 0, sizeof(putString));
+					            charReceived 	= 0U;
+								charToBeXmitted = 0U;
+								memset(getString, 0U, sizeof(getString));
+								memset(putString, 0U, sizeof(putString));
 								
-								state = 0;
-								CLEAR_SCREEN()	
+								state = 0U;
+								CLEAR_SCREEN()
 								
-								menuLevel = 2;
+								menuLevel = 2U;
 						    }
 						#endif
 					}
 				}
-				else if(state == 2)	//response received-echo-back
+				else if(state == 2U)	//response received-echo-back
 				{
-					static uint8_t charXmitted = 0;
+					static uint8_t charXmitted = 0U;
+
 					if(charXmitted < charToBeXmitted)	
 					{
 						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
-				        if(count == 0ul)
+				        if(count == 0U)
 				        {
 				          	handle_error();
 				        }
 					}
 					else 
 					{
-						charXmitted = 0;
-						state = 3;
+						charXmitted = 0U;
+						state = 3U;
 					}
 				}
-				else if(state == 3)	//reset state
+				else if(state == 3U)	//reset state
 				{
-					if(Delay_NonBlocking(1000U))
+					if(Delay_NonBlocking(2500U))	//delay 1) to display user-input 2) mandatory-del after Xmission
 					{
-						charReceived 	= 0;
-						charToBeXmitted = 0;
-						memset(getString, 0, sizeof(getString));
-						memset(putString, 0, sizeof(putString));
+						charReceived 	= 0U;
+						charToBeXmitted = 0U;
+						memset(getString, 0U, sizeof(getString));
+						memset(putString, 0U, sizeof(putString));
 		
 						// Update menu level
-						goAhead ? (menuLevel += 1) : (menuLevel = 0);
+						goAhead ? (menuLevel += 1U) : (menuLevel = 0U);
 					
 						// Clear terminal screen
 						CLEAR_SCREEN()	
-						state = 0;
+						state = 0U;
 					}
 				}
 			}
 			else if(menuLevel == 1U)
 			{
-				static uint8_t state = 0;
+				static uint8_t state = 0U;
 
-				if(!state)	//menu-printing (Menu_M0.0/M0.1)
+				if(state == 0U)	//menu-printing (Menu_M0.0/M0.1)
 				{
-					if(userDataInput[0][0] == 1)		//start/stop
+					if(userDataInput[0][0] == 1U)		//start/stop
 					{
 						UART_GotoXY(1, 1);
 						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
@@ -1983,17 +1979,17 @@ int main(void)
 					    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
 
 						UART_GotoXY(5, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "# Menu_M0.0 - Start/Stop Motor Menu \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Page_0.0 - Start/Stop Motor \r\n");
 						
 						UART_GotoXY(7, 1);
 						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor \r\n");
 						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor \r\n");
 						
 						UART_GotoXY(10, 1);	
-						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
 						UART_GotoXY(10, 16);	//go to line # 10 to take input from user
 					}
-					else if(userDataInput[0][0] == 2)	//speedCmd
+					else if(userDataInput[0][0] == 2U)	//speedCmd
 					{
 						UART_GotoXY(1, 1);
 						Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
@@ -2011,9 +2007,10 @@ int main(void)
 						UART_GotoXY(10, 16);	//go to line # 9 to take input from user
 					}
 						
-					state = 1;
+					goAhead = false;
+					state = 1U;
 				}
-				else if(state == 1)	//receiving
+				else if(state == 1U)	//receiving
 				{	
 					read_value = Cy_SCB_UART_Get(USER_UART_HW);
 					if(read_value != CY_SCB_UART_RX_NO_DATA)
@@ -2024,39 +2021,37 @@ int main(void)
 						
 							sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
 							
-							if(userDataInput[0][0] == 1)	//start/stop
+							if(userDataInput[0][0] == 1U)	//start/stop
 							{
-								if(getNum == 1 || getNum == 2)
+								if(getNum == 1U || getNum == 2U)
 								{
 									putNum = getNum;
 									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
-									userDataInput[1][0] = getNum;				//userDataInput[menuLevel][0] = getNum;
-									goAhead = 1;
+									userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+									goAhead = true;
 								}
 								else 
 								{
 									strcpy(putString, "invalid input");
-									goAhead = 0;
 								}
 							}
-							else if(userDataInput[0][0] == 2)	//speedRef 
+							else if(userDataInput[0][0] == 2U)	//speedRef 
 							{
 								if(getNum)	//if non-Zero
 								{
 									putNum = getNum;
 									sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
-									userDataInput[1][0] = getNum;				//userDataInput[menuLevel][0] = getNum;
-									goAhead = 1;
+									userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+									goAhead = true;
 								}
 								else 
 								{
 									strcpy(putString, "invalid input");
-									goAhead = 0;
 								}
 							}
 							
 							charToBeXmitted = strlen(putString);
-							state = 2;
+							state = 2U;
 						}
 						else 
 						{
@@ -2064,36 +2059,37 @@ int main(void)
 						}
 					}
 				}
-				else if(state == 2)	//response received-echo-back
+				else if(state == 2U)	//response received-echo-back
 				{
 					static uint8_t charXmitted = 0;
+
 					if(charXmitted < charToBeXmitted)	
 					{
 						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
-				        if(count == 0ul)
+				        if(count == 0U)
 				        {
 				          	handle_error();
 				        }
 					}
 					else 
 					{
-						charXmitted = 0;
-						state = 3;
+						charXmitted = 0U;
+						state = 5U;	//3U;
 					}
 				}
-				else if(state == 3)	//reset state
+				else if(state == 5U)	//reset state
 				{
-					if(Delay_NonBlocking(1000U))
+					if(Delay_NonBlocking(2500U))	//delay 1)to display use-input & 2)mandatory-del after Xmission
 					{
-						charReceived 	= 0;
-						charToBeXmitted = 0;
-						memset(getString, 0, sizeof(getString));
-						memset(putString, 0, sizeof(putString));
+						charReceived 	= 0U;
+						charToBeXmitted = 0U;
+						memset(getString, 0U, sizeof(getString));
+						memset(putString, 0U, sizeof(putString));
 		
-						goAhead ? (menuLevel += 1) : (menuLevel = 0);
+						goAhead ? (menuLevel += 1U) : (menuLevel = 0U);
 					
 						CLEAR_SCREEN()	//clear screen
-						state = 0;
+						state = 0U;
 					}
 				}
 			}
@@ -2102,9 +2098,8 @@ int main(void)
 				static uint8_t state = 0U;
 				static uint8_t init = 0U;
 				static bool userInput = false;
-				//static uint8_t init_state_1 = 0;
 
-				if(state == 0U)	//menu-printing (Observation Menu)
+				if(state == 0U)	//dash board-printing
 				{
 					if(init == 0U)	//menu specific
 					{
@@ -2124,7 +2119,7 @@ int main(void)
 							speedCmd = userDataInput[1][0];
 						}
 
-						init++;
+						init = 1U;
 					}
 					else if(init == 1U)	//para-disp
 					{
@@ -2156,16 +2151,16 @@ int main(void)
 						Cy_SCB_UART_PutString(USER_UART_HW, "# fault: \r\n");
 
 						UART_GotoXY(20, 1);
-						Cy_SCB_UART_PutString(USER_UART_HW, "# enter 0 for main menu: ");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# enter 0 for Page_0: ");
 						UART_GotoXY(20, 35);
 
-						init++;
+						init = 2U;
 					}
 					else if(init == 2U)	//delay
 					{
 						if(Delay_NonBlocking(1000U))
 						{
-							init++;
+							init = 3U;
 						}
 					}
 					else if(init == 3U) 	
@@ -2177,132 +2172,126 @@ int main(void)
 						userInput	= false;
 					}
 				}
-				else if(state == 1U)	//inputing
+				else if(state == 1U)	//getting user-input
 				{
-					#if 1
-						read_value = Cy_SCB_UART_Get(USER_UART_HW);
-		
-						if(read_value != CY_SCB_UART_RX_NO_DATA)	//check-resp
+					read_value = Cy_SCB_UART_Get(USER_UART_HW);
+	
+					if(read_value != CY_SCB_UART_RX_NO_DATA)	//check-resp
+					{
+						char rx = (char)read_value;
+						
+						if (rx == '\n')
 						{
-							char rx = (char)read_value;
+							uint32_t getNum = 0xFFU;
 							
-							if (rx == '\n')
+							getString[charReceived] = '\0'; //safe termination
+							charReceived = 0U;
+							
+							if (sscanf(getString, "%lu", &getNum) == 1)	//string to integer 
 							{
-								uint32_t getNum = 0xFFU;
-								//uint32_t putNum = 0U;
-								
-								getString[charReceived] = '\0'; // safe termination
-								charReceived = 0U;
-								
-								if (sscanf(getString, "%lu", &getNum) == 1)	//string to integer 
+								if (getNum == 0U)
 								{
-									if (getNum == 0U)
-									{
-										goBackMainMenu = true;
-										goAhead = 1U;
-										state = 7U;	//3U;
-									}
-									else
-									{
-										//(void)strcpy(putString, "invalid input \r\n");
-										//charToBeXmitted = (uint8_t)strlen(putString);
-
-										Cy_SCB_UART_PutString(USER_UART_HW, "invalid input \r\n");
-										state = 7U;	//2U;
-									}
+									strcpy(putString, "Page_0 req ");
+									charToBeXmitted = (uint8_t)strlen(putString) + 1;
+									goBackMainMenu = true;
+									goAhead = 1U;
 								}
 								else
 								{
-									//(void)strcpy(putString, "invalid input \r\n");
-									//charToBeXmitted = (uint8_t)strlen(putString);
-
-									Cy_SCB_UART_PutString(USER_UART_HW, "invalid input \r\n");
-									state = 7U;	//2U;
+									strcpy(putString, "invalid input ");
+									charToBeXmitted = (uint8_t)strlen(putString) + 1;
 								}
-
-								userInput = true;
 							}
-							else //if (rx != '\n')
+							else
 							{
-								if (charReceived < (sizeof(getString) - 1U))	// avoid buffer overflow
-								{
-									getString[charReceived++] = rx;
-								}
+								(void)strcpy(putString, "invalid input ");
+								charToBeXmitted = (uint8_t)strlen(putString) + 1;
+							}
+
+							state = 2U;
+							userInput = true;
+						}
+						else //if (rx != '\n')
+						{
+							if (charReceived < (sizeof(getString) - 1U))	// avoid buffer overflow
+							{
+								getString[charReceived++] = rx;
 							}
 						}
-						else	//para-round-robin loop
-						{
-							#if 1
-								if(Delay_NonBlocking(5000U))
-								{
-									uint32_t putNum = getParaVal(loopCount);
-									charToBeXmitted = (uint8_t)sprintf(putString, "%lu", putNum);
-	
-									UART_GotoXY((loopCount + 10), 35);	//goToXY for parameters-print
-	
-									if(++loopCount >= 8U)
-									{
-										loopCount = 0U;
-									}						
-	
-									state = 7U; //2U;
-								}
-							#endif
-						}
-					#endif
-				}
-				else if(state == 7U)	//wait-state
-				{
-					if(Delay_NonBlocking(5000U))
+					}
+					else	//para-round-robin loop
 					{
-						#if 1
-							if(goAhead == 1U)
-								state = 3U;
-							else 
-								state = 2U;
-						#endif
+						if(Delay_NonBlocking(1000U))
+						{
+							uint32_t putNum = getParaVal(loopCount);
+							charToBeXmitted = (uint8_t)sprintf(putString, "%lu", putNum);
+
+							UART_GotoXY((loopCount + 10), 35);	//goToXY for parameters-print
+
+							if(++loopCount >= 8U)
+							{
+								loopCount = 0U;
+							}						
+
+							state = 2U;	//7U;
+						}
 					}
 				}
-				else if(state == 2U)	//received & echo-back
+				else if(state == 2U)	//7U)	//wait-state
+				{
+					if(Delay_NonBlocking(100U))	//mandatory del for UART_GotoXY();
+					{
+						state = 3U;
+					}
+				}
+				else if(state == 3U)	//received & echo-back
+				{
+					static uint8_t charXmitted = 0U;
+
+					if(charXmitted < charToBeXmitted)	
+					{
+						count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
+				        if(count == 0U)
+				        {
+				          	handle_error();
+				        }
+					}
+					else 
+					{
+						charXmitted = 0U;
+						state = 4U;
+					}
+				}
+				else if(state == 4U)	//received & echo-back
 				{
 					if(userInput == true)
 					{
 						if(Delay_NonBlocking(2500U))
 						{
-							UART_GotoXY(20, 35);
-							Cy_SCB_UART_PutString(USER_UART_HW, "               ");
-							UART_GotoXY(20, 35);		//for next iteration
-							state = 3U;
+							if(goAhead == 0U)
+							{
+								UART_GotoXY(20, 35); //to erase invalid-input, so start from (20, 35)
+								Cy_SCB_UART_PutString(USER_UART_HW, "               ");
+							}
+								
+							UART_GotoXY(20, 35); //for next iteration
+							state = 5U;
 						}
 					}
-					else
+					else 
 					{
-						static uint8_t charXmitted = 0;
-
-						if(charXmitted < charToBeXmitted)	
-						{
-							count = Cy_SCB_UART_Put(USER_UART_HW, putString[charXmitted++]);
-					        if(count == 0ul)
-					        {
-					          	handle_error();
-					        }
-						}
-						else 
-						{
-							charXmitted = 0;
-							UART_GotoXY(20, 35);	//for next iteration
-							state = 3U;
-						}
+						UART_GotoXY(20, 35); //for next iteration
+						state = 5U;
 					}
 				}
-				else if(state == 3U)	//reset state
+				else if(state == 5U)	//reset state
 				{
-					if(Delay_NonBlocking(1000U))
+					if(Delay_NonBlocking(100U))	//mandatory del for UART_GotoXY();
 					{
-						charReceived 	= 0;
-						charToBeXmitted = 0;
-						memset(getString, 0, sizeof(getString));
-						memset(putString, 0, sizeof(putString));
+						charReceived 	= 0U;
+						charToBeXmitted = 0U;
+						memset(getString, 0U, sizeof(getString));
+						memset(putString, 0U, sizeof(putString));
 	
 						goAhead = false;
 						userInput = false;
@@ -2312,7 +2301,6 @@ int main(void)
 						{
 							CLEAR_SCREEN()
 
-							//init = 0;
 							menuLevel = 0U;
 							loopCount = 0U;
 							goBackMainMenu = false;
@@ -2336,8 +2324,9 @@ int main(void)
 void toggle_led_on_systick_handler(void)
 {
 	currTick++;
+	static uint32_t tick = 0U;
 
-	if (currTick >= BLINK_RATE_TICKS)
+	if (++tick >= BLINK_RATE_TICKS)
 	{
 		currSec++;
 
@@ -2356,10 +2345,8 @@ void toggle_led_on_systick_handler(void)
 	                      (toggle_state ? LED_OFF : LED_ON));	        
 		#endif
 
-		currTick = 0U;
+		tick = 0U;
 	}
-
-	
 
 	#if TIME_ELAPSED
 	    static uint32_t startTick = 0U;
