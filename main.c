@@ -82,7 +82,8 @@ int main(void)
     
     #if defined(COMPONENT_CAT1C)// Disabled the D-CACHE for XMC7200 device. 
     SCB_DisableDCache();
-    #endif
+    #endif 
+
     result = cybsp_init();                 /* Initialize the device and board peripherals */
     CY_ASSERT(result == CY_RSLT_SUCCESS);  /* Board init failed. Stop program execution   */
 
@@ -130,11 +131,11 @@ int main(void)
     for (;;)
     {
 		#if GUI
-			static bool motorStart = false;
+			static bool guiStart = false;
 
-			if(motorStart == false)
+			if(guiStart == false)
 			{
-				motorStart = MotorStart_Call();
+				guiStart = guiStart_Call();
 			}
 			else 
 			{

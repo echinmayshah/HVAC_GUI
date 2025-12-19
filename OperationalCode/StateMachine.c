@@ -393,40 +393,13 @@ static void BrakeBootISR0(MOTOR_t *motor_ptr)
 	PARAMS_t* params_ptr = motor_ptr->params_ptr;
 #endif
 	
-	#if 1
+	#if 0
 		bool i = (bool)motor_ptr->motor_instance;
 		
 		if(m[i].startMotor == false &&	\
 			m[i].stopMotor == false)
 		{
 			m[i].tickISR++;
-			
-			#if 0
-				if((m[i].tickISR % 45000U) == 0)
-				{
-					Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, m[i].toggle);
-					Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, m[i].toggle);
-					
-					m[i].toggle ^= 1U;
-		
-					m[i].tickSec++;
-					if(m[i].tickSec >= 5U)
-					{
-						m[i].speedDesired 	= 0.9f;	
-						m[i].fullThrotole 	= false;
-						m[i].startMotor 	= true;
-		
-						if(i == 0U)
-						{
-							Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
-							Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
-						}
-						
-						m[i].tickSec = 0U;
-						m[i].tickISR = 0U;
-					}
-				}
-			#endif
 		}
 	#endif
 		
@@ -578,14 +551,19 @@ static void SpeedCLISR0(MOTOR_t *motor_ptr)
 
     FeedbackISR0Wrap[motor_ptr->motor_instance](motor_ptr);
  
- 	#if 1
+ 	#if 0
+ 		if(vars_ptr->w_est.elec <= closedLoop_Speed)
+ 			vars_ptr->w_est.elec = closedLoop_Speed;
+	#endif
+	
+	#if 1
 		vars_ptr->w_final.elec 		= vars_ptr->w_est.elec;			//speedFdb
 		vars_ptr->th_r_final.elec 	= vars_ptr->th_r_est.elec;		//angleFdb
 	
 		if(motor_ptr->motor_instance == 0U)
-			speedFdb_M0 = (uint32_t)vars_ptr->w_est.elec;
+			speedFdb_M0 = (uint32_t)vars_ptr->w_est.elec;			//to display on GUI
 		else if(motor_ptr->motor_instance == 1U)
-			speedFdb_M1 = (uint32_t)vars_ptr->w_est.elec;
+			speedFdb_M1 = (uint32_t)vars_ptr->w_est.elec;			//to display on GUI
 	
 		#if 0
 			static uint32_t tick_temp = 0U;
@@ -651,6 +629,11 @@ static void SpeedCLISR1(MOTOR_t *motor_ptr)
     PARAMS_t* params_ptr = motor_ptr->params_ptr;
     PROTECT_t* protect_ptr = motor_ptr->protect_ptr;
 #endif
+
+	#if 0
+ 		if(vars_ptr->w_est.elec <= closedLoop_Speed)
+ 			vars_ptr->w_est.elec = closedLoop_Speed;
+	#endif
 
 	
 	#if 0
@@ -1415,12 +1398,13 @@ static void ConditionCheck(MOTOR_t *motor_ptr)
 #if defined(CTRL_METHOD_RFO)||defined(CTRL_METHOD_SFO)||defined(CTRL_METHOD_TBC)
     bool no_speed_reset_required = !sm_ptr->vars.speed_reset_required;
 #endif
+
     float w_cmd_ext_abs = ABS(vars_ptr->w_cmd_ext.elec);
     float w_cmd_int_abs = ABS(vars_ptr->w_cmd_int.elec);
     float w_thresh_above_low = params_ptr->ctrl.volt.w_thresh.elec;
     float w_thresh_below_low = params_ptr->ctrl.volt.w_thresh.elec - params_ptr->ctrl.volt.w_hyst.elec;
-    float w_thresh_above_high = 502.0f;//params_ptr->obs.w_thresh.elec;
-    float w_thresh_below_high = 502.0f;//params_ptr->obs.w_thresh.elec - params_ptr->obs.w_hyst.elec;
+    float w_thresh_above_high = closedLoop_Speed;//params_ptr->obs.w_thresh.elec;
+    float w_thresh_below_high = closedLoop_Speed;//params_ptr->obs.w_thresh.elec - params_ptr->obs.w_hyst.elec;
 
     bool w_cmd_ext_above_thresh_low = w_cmd_ext_abs > w_thresh_above_low;
     bool w_cmd_ext_below_thresh_low = w_cmd_ext_abs < w_thresh_below_low;

@@ -32,7 +32,7 @@
 
 void handle_error(void);
 void GUI_Call(void);
-bool MotorStart_Call(void);
+bool guiStart_Call(void);
 
 
 

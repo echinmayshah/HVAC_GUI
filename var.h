@@ -90,16 +90,13 @@ typedef struct
 
 	float speedDesired;	
 	float speedCmd;
-	float speedRef;
+	//float speedRef;
 	float speedInc;
 	float speedDec;
+	
+	uint32_t tick;
 
 	uint8_t gearUp;
-	uint16_t tick;
-	uint32_t tickISR;
-	uint8_t tickSec;
-
-	bool toggle;
 }motor_t;
 extern motor_t m[2];
 	
@@ -108,5 +105,10 @@ extern uint32_t speedFdb_M0, speedFdb_M1;
 
 extern uint32_t gSysTick;
 extern uint16_t gSysSec;
+
+extern bool defautSpeedStart;
+extern bool emStop[2];
+
+extern float closedLoop_Speed;
 
 #endif /* VAR_H_ */

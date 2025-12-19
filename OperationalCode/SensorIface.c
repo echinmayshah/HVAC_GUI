@@ -335,133 +335,34 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 		vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
 	#endif
 
-	#if 0//SAFE
-		if(startMotor == true && \
-			stopMotor == false)
-		{
-			//if(motor_ptr->motor_instance == 0U)
-			{	
-				if(++tick_4 >= 20000U)	 //@every 8 second, as 5000U = 1 second
-				{
-					if(fullThrotole == false)
-					{
-						if(speedCmd < speedDesired)//0.95f)
-						{
-							static bool toggle = 0;
-							speedCmd += 0.025f;
-		
-							toggle ^= 1;
-							Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
-							//Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
-						}
-						else 
-						{
-							Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
-							Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
-							fullThrotole = true;
-						}
-					}
-					else //if(fullThrotole == true)
-					{
-						if(speedCmd >= 0.35f)
-						{
-							static bool toggle = 0;
-							speedCmd -= 0.05f;
-		
-							toggle ^= 1;
-							//Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
-							Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
-						}
-						else 
-						{
-							fullThrotole 	= false;
-							startMotor 		= false;
-							stopMotor 		= true;
-							Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 1);
-							Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 1);
-						}
-					}
-					
-					if(i_4 < 250)
-					{
-						arr_pot[i_4] 		= vars_ptr->cmd_final;				//pot
-						arr_mech[i_4] 		= params_ptr->sys.cmd.w_max.mech;	//derived mech_speed
-						arr_elec[i_4] 		= vars_ptr->w_cmd_ext.elec;			//derived elec_speed
-						arr_elec_int[i_4] 	= vars_ptr->w_cmd_int.elec;
-
-						i_4++;
-					}
-
-					#if 1
-						if(motor_ptr->motor_instance == 0U)
-						{
-							arr_speedCmd_M0[k0] = speedCmd*1675.00;
-							if(k0 < 100)
-								k0++;
-						}
-						else if(motor_ptr->motor_instance == 1U)
-						{
-							arr_speedCmd_M1[k1] = speedCmd*1675.00;
-							if(k1 < 100)
-								k1++;
-						}
-					#endif
-					tick_4 = 0;
-				}
-			}
-		}
-		
-		if(startMotor == true)
-		{
-			if(motor_ptr->motor_instance == 0U)
-			{
-				#if 1
-					vars_ptr->cmd_int = speedCmd;
-				#endif
-				
-				#if 0
-					vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
-				#endif
-
-				speedCmd_M0 = (uint32_t)(vars_ptr->cmd_int*1675.00);
-			}
-			else if(motor_ptr->motor_instance == 1U)
-			{
-				#if 1
-					vars_ptr->cmd_int = speedCmd/1.5f;
-					if(vars_ptr->cmd_int <= 0.3f)
-						vars_ptr->cmd_int = 0.3f;
-				#endif
-
-				#if 0
-					vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
-				#endif
-
-				speedCmd_M1 = (uint32_t)(vars_ptr->cmd_int*1675.00);
-			}
-		}
-		else 
-		{
-			#if 1
-				vars_ptr->cmd_int = 0.0f;
-			#endif
-		}
-	#endif
-
-	
-
 	#if 1
-		bool i = (bool)motor_ptr->motor_instance;
-
-		if(i == 0U)
+		if(defautSpeedStart == true)
 		{
+			m[0].speedDesired 	= 0.8f;
+			m[0].speedInc		= 0.025f;
+			m[0].speedDec		= 0.05f;
+			m[0].fullThrotole 	= false;
+			m[0].startMotor 	= true;
+			
+			m[1].speedDesired 	= 0.8f;
+			m[1].speedInc		= 0.025f;
+			m[1].speedDec		= 0.075f;
+			m[1].fullThrotole 	= false;
+			m[1].startMotor 	= true;
+			
+			defautSpeedStart = false;
+		}
+		else //if(defautSpeedStart == false)
+		{
+			bool i = (bool)motor_ptr->motor_instance;
+	
+			#if 0
 			if(m[i].startMotor == true && \
 				m[i].stopMotor == false)
 			{
 				if(m[i].gearUp == 0U)
 				{
-					
-					if(++m[i].tick >= 20000U)	//@every 4 second, as 5000U = 1 second
+					if(++m[i].tick >= 10000U)	//@every 4 second, as 5000U = 1 second
 					{
 						m[i].gearUp = 1U;
 						m[i].tick = 0U;
@@ -473,12 +374,14 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 					{
 						if(m[i].speedCmd < (m[i].speedDesired - m[i].speedInc))
 						{
+							static bool toggle = false;
+							
 							m[i].speedCmd += m[i].speedInc;
 		
-							m[i].toggle ^= 1;
 							if(i == 0U)	//LED indication is for motor_0 only
 							{
-								Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, m[i].toggle);
+								toggle ^= 1;
+								Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
 								//Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
 							}
 						}
@@ -491,23 +394,24 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 								Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
 								Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
 							}
-							m[i].tick 	= 0U;
 						}
 						
 						m[i].gearUp = 0U;
-						m[i].tick 	= 0U;
+						//m[i].tick 	= 0U;
 					}
 					else //if(fullThrotole == true)
 					{
-						if(m[i].speedCmd > (0.3f + m[i].speedDec))
+						if(m[i].speedCmd >= (0.3f + m[i].speedDec))
 						{
+							static bool toggle = false;
+							
 							m[i].speedCmd -= m[i].speedDec;
 		
-							m[i].toggle ^= 1;
 							if(i == 0U)	//LED indication is for motor_0 only
 							{	
+								toggle ^= 1;
 								//Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
-								Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, m[i].toggle);
+								Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
 							}
 						}
 						else 
@@ -515,6 +419,7 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 							m[i].fullThrotole 	= false;
 							m[i].startMotor 	= false;
 							m[i].stopMotor 		= true;
+							
 							if(i == 0U)	//LED indication is for motor_0 only
 							{
 								Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 1);
@@ -523,31 +428,141 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 						}
 						
 						m[i].gearUp = 0U;
-						m[i].tick 	= 0U;
+						//m[i].tick 	= 0U;
 					}
 				}
 			}
-		}
-		
-		if(m[i].startMotor == true)
-		{
-			#if 0
-				vars_ptr->cmd_int = speedCmd;
+			
+			
+			if(m[i].startMotor == true)
+			{
+				#if 1
+					vars_ptr->cmd_int = m[i].speedCmd;
+				#endif
+	
+				#if 0
+					vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
+				#endif
+	
+				if(i == 0U)
+					speedCmd_M0 = (uint32_t)(vars_ptr->cmd_int*1675.00);	//to display on GUI
+				else 
+					speedCmd_M1 = (uint32_t)(vars_ptr->cmd_int*1675.00);	//to display on GUI
+			}
+			else 
+			{
+				#if 1
+					vars_ptr->cmd_int = 0.0f;
+				#endif
+			}
 			#endif
-
+			
 			#if 1
-				vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
-			#endif
-
+			if(	(motor[i].faults_ptr->flags.sw.reg == 0U) && \
+				 emStop[i] == false)
+			{
+				if(m[i].startMotor == true && \
+					m[i].stopMotor == false)
+				{
+					if(m[i].gearUp == 0U)
+					{
+						if(++m[i].tick >= 10000U)	//@every 4 second, as 5000U = 1 second
+						{
+							m[i].gearUp = 1U;
+							m[i].tick = 0U;
+						}
+					}
+					else if(m[i].gearUp == 2U)	 //@every 4 second, as 5000U = 1 second
+					{
+						if(m[i].fullThrotole == false)
+						{
+							if(m[i].speedCmd < (m[i].speedDesired - m[i].speedInc))
+							{
+								static bool toggle = false;
+								
+								m[i].speedCmd += m[i].speedInc;
+			
+								if(i == 0U)	//LED indication is for motor_0 only
+								{
+									toggle ^= 1;
+									Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
+									//Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
+								}
+							}
+							else 
+							{
+								m[i].fullThrotole = true;
+								
+								if(i == 0U)	//LED indication is for motor_0 only
+								{
+									Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
+									Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
+								}
+							}
+							
+							m[i].gearUp = 0U;
+							//m[i].tick 	= 0U;
+						}
+						else //if(fullThrotole == true)
+						{
+							if(m[i].speedCmd >= (0.3f + m[i].speedDec))
+							{
+								static bool toggle = false;
+								
+								m[i].speedCmd -= m[i].speedDec;
+			
+								if(i == 0U)	//LED indication is for motor_0 only
+								{	
+									toggle ^= 1;
+									//Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
+									Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);
+								}
+							}
+							else 
+							{
+								m[i].fullThrotole 	= false;
+								m[i].startMotor 	= false;
+								m[i].stopMotor 		= true;
+								
+								if(i == 0U)	//LED indication is for motor_0 only
+								{
+									Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 1);
+									Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 1);
+								}
+							}
+							
+							m[i].gearUp = 0U;
+							//m[i].tick 	= 0U;
+						}
+					}
+				}
+				
+				if(m[i].startMotor == true)
+				{
+					#if 1
+						vars_ptr->cmd_int = m[i].speedCmd;
+					#endif
+		
+					#if 0
+						vars_ptr->cmd_int = sensor_iface_ptr->pot.filt;
+					#endif
+				}
+				else 
+				{
+					#if 1
+						vars_ptr->cmd_int = 0.0f;
+					#endif
+				}
+			}
+			else
+			{
+				vars_ptr->cmd_int = 0.0f;
+			}
+			
 			if(i == 0U)
 				speedCmd_M0 = (uint32_t)(vars_ptr->cmd_int*1675.00);	//to display on GUI
 			else 
 				speedCmd_M1 = (uint32_t)(vars_ptr->cmd_int*1675.00);	//to display on GUI
-		}
-		else 
-		{
-			#if 0
-				vars_ptr->cmd_int = 0.0f;
 			#endif
 		}
 	#endif

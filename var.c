@@ -74,11 +74,16 @@
 
 motor_t m[2];
 
-volatile uint32_t speedCmd_M0, speedCmd_M1;
+volatile uint32_t speedCmd_M0 = 0, speedCmd_M1 = 0;
 uint32_t speedFdb_M0, speedFdb_M1;
 
 uint32_t gSysTick = 0;
 uint16_t gSysSec = 0;
+
+bool defautSpeedStart = false;
+bool emStop[2] = { 0 };
+
+float closedLoop_Speed = 544.0f;//460.0f;
 
 
 
