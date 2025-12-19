@@ -12,7 +12,7 @@
 #define CLEAR_SCREEN() Cy_SCB_UART_PutString(USER_UART_HW, "\x1b[2J\x1b[;H");	
 
 #if GUI
-	bool stateInit = 0;
+	//bool stateInit = 0;
 
 	uint32_t read_value;// = CY_SCB_UART_RX_NO_DATA;
 	uint8_t charReceived = 0;
@@ -31,20 +31,15 @@
 	bool goAhead = 0;
 	uint8_t loopCount = 0;
 	
+	//uint16_t userDataInput[3][1] = {0};
 	uint16_t userDataInput[2][1] = {0};
+	bool motor_x = 0U;
 	float speedStart = 0.5f;
 #endif
 
-static inline uint32_t random_range(uint32_t , uint32_t );
 static uint32_t getParaVal(uint8_t );
 static bool Delay_NonBlocking(uint32_t );
 static void UART_GotoXY(uint8_t , uint8_t );
-
-
-static inline uint32_t random_range(uint32_t min, uint32_t max)
-{
-    return (rand() % (max - min + 1)) + min;
-}
 
 static inline uint8_t popcount_u32(uint32_t v)
 {
@@ -68,27 +63,13 @@ static uint32_t getParaVal(uint8_t loopCount)
     switch (loopCount)
     {
         case 0U:	//speedCmd
-            //speedCmd = random_range(1, 1000);
-            //getNum = speedCmd;
-           
 			if(motorInstance == false)
 				 getNum = speedCmd_M0;
 			else if(motorInstance == true)
 				 getNum = speedCmd_M1;
             break;
 
-		#if 0
-	        case 1:	//speedRef
-	            m[motorInstance].speedRef = m[motorInstance].speedDesired;//random_range(1, 1000);
-	            //if (speedRef > speedCmd)
-	                //speedRef = speedCmd;
-	            getNum = m[motorInstance].speedRef;
-	            break;
-        #endif
-
         case 1U:	//speedFdb
-            //speedFdb = random_range(1, 1000);
-            //getNum = speedFdb;
             if(motorInstance == false)
             {
 				if(isrState[motorInstance] == eClosed_Loop)
@@ -118,49 +99,30 @@ static uint32_t getParaVal(uint8_t loopCount)
             getNum = mode;
             break;
 
-        case 3U:	//temp
-            //uint32_t temp = random_range(1, MAX_TEMPERATURE);
-            //temprature = (temp < MIN_TEMPERATURE) ? MIN_TEMPERATURE : temp;
+        case 3U:
             getNum = motor[motorInstance].vars_ptr->temp_ps;
         	break;
-
-		#if 0
-        case 4U:	//greenLED
-            //getNum = greenLED;
-            if(motor[i].faults_ptr->flags.sw.reg == 0U)
-            {
-				getNum = false;
-			}
-			else 
-			{
-				getNum = true;
-			}
-            break;
-        #endif
             
  		case 4U:	//greenLED
         case 5U:	//redLED
-            //getNum = redLED;
             if(motor[motorInstance].faults_ptr->flags.sw.reg == 0U)
             {
 				if(loopCount == 4U)			//greenLED
 					getNum = 1U;
-				else if(loopCount == 5U)	//redLED
+				else //if(loopCount == 5U)	//redLED
 					getNum = 0U;
 			}
 			else 
 			{
 				if(loopCount == 4U)			//greenLED
 					getNum = 0U;
-				else if(loopCount == 5U)	//redLED
+				else //if(loopCount == 5U)	//redLED
 					getNum = 1U;
 			}
             break;
 
         case 6U:	//fault
         default:
-            //fault = random_range(0, 5);
-            //faults_ptr->flags.sw.oc;
             getNum = motor[motorInstance].faults_ptr->flags.sw.reg;
             break;
     }
@@ -178,15 +140,15 @@ static void UART_GotoXY(uint8_t row, uint8_t col)
 
 static bool Delay_NonBlocking(uint32_t requiredDelay_mSec)
 {			
-	static int32_t startTick = 0U;
+	static uint32_t lastTick = 0U;
 	
-	if (startTick == 0U)
+	if (lastTick == 0U)
 	{
-		startTick = gSysTick;          
+		lastTick = gSysTick;          
 	}
-	else if ((gSysTick - startTick) >= requiredDelay_mSec)
+	else if ((gSysTick - lastTick) >= requiredDelay_mSec)
 	{
-		startTick = 0;
+		lastTick = 0;
 		
 		return(true);
 	}
@@ -205,35 +167,6 @@ void handle_error(void)
 #if 0
 	bool guiStart_Call(void)
 	{
-		if(m[0].sysTick >= 1000U)
-		{			
-			Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, m[0].toggle);
-			Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, m[0].toggle);
-			
-			m[0].toggle ^= 1U;
-			
-			m[0].sysSec++;
-			if(m[0].sysSec >= 5U)
-			{		
-				Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
-				Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
-				
-				m[0].sysTick = 0U;
-				m[0].sysSec = 0U;
-				
-				return true;
-			}
-	
-			m[0].sysTick = 0U;
-		}
-		
-		return false;
-	}
-#endif
-
-#if 1
-	bool guiStart_Call(void)
-	{
 		static bool init = false;
 		static uint32_t lastTick = 0U;
 		static uint8_t secCnt  = 0U;
@@ -250,10 +183,10 @@ void handle_error(void)
 		    {
 		        lastTick += 1000U;      /* Maintain precise period */
 		     
-				secCnt ++;
-				if(secCnt  >= 5U)
+				secCnt++;
+				if(secCnt >= 5U)
 				{
-					secCnt  = 0U;
+					secCnt = 0U;
 					
 					Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
 					Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
@@ -270,6 +203,43 @@ void handle_error(void)
 		return false;
 	}
 #endif
+
+#if 1
+	bool guiStart_Call(void)
+	{
+		//static bool init = false;
+		static uint32_t lastTick = 0U;
+		static uint8_t secCnt  = 0U;
+		static bool toggle = false;
+	
+		if(lastTick == false)
+		{
+			lastTick = gSysTick;
+		}
+		else if ( (gSysTick - lastTick) >= 1000U )
+	    {
+	        lastTick += 1000U;
+	     
+			secCnt++;
+			if(secCnt >= 5U)
+			{
+				secCnt = 0U;
+				
+				Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, 0);
+				Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, 0);
+
+				return true;
+			}
+			
+			toggle ^= 1U;
+			Cy_GPIO_Write(DIR_LED_PORT, DIR_LED_NUM, toggle);
+			Cy_GPIO_Write(FAULT_LED_ALL_PORT, FAULT_LED_ALL_NUM, toggle);	
+		}
+	
+		return false;
+	}
+#endif
+
 void GUI_Call(void)
 {
 	if(menuLevel == 0U)			//motor_0/motor_1?
@@ -289,13 +259,14 @@ void GUI_Call(void)
 			Cy_SCB_UART_PutString(USER_UART_HW, "# but, don't enter until it prompt \r\n");
 			
 			UART_GotoXY(9, 1);
-			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 0 for motor_0 \r\n");
-			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 for motor_1 \r\n");
+			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 0 for Motor_0 \r\n");
+			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 for Motor_1 \r\n");
 			
 			UART_GotoXY(12, 1);
 			Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
 			UART_GotoXY(12, 16);
 
+			memset(userDataInput, 0U, sizeof(userDataInput));
 			goAhead = false;
 			state = 1U;
 		}
@@ -321,7 +292,8 @@ void GUI_Call(void)
 			            {
 			                putNum = getNum;
 			                (void)sprintf(putString, "%lu", putNum);
-			                userDataInput[0][0] = putNum;
+			                //userDataInput[0][0] = putNum;	//motor_0 or motor_1
+			                motor_x = putNum;
 			                goAhead = true;
 			            }
 			            else
@@ -413,8 +385,18 @@ void GUI_Call(void)
 			Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1 \r\n");
 			
 			UART_GotoXY(8, 1);
-			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop motor \r\n");
-			Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd \r\n");
+			//if(userDataInput[0][0]	== 0U)	//motor_0
+			if(motor_x == 0U)
+			{
+				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop Motor_0 	\r\n");
+				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd of Motor_0	\r\n");
+			}
+			//else //if(userDataInput[0][0]	== 1U)	//motor_1
+			else //if(motor_x == 1U)
+			{
+				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start/stop Motor_1 	\r\n");
+				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 for speedCmd of Motor_1	\r\n");
+			}
 			
 			UART_GotoXY(11, 1);
 			Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");	//\r\n");
@@ -445,7 +427,20 @@ void GUI_Call(void)
 			            {
 			                putNum = getNum;
 			                (void)sprintf(putString, "%lu", putNum);
-			                userDataInput[0][0] = putNum;
+			                //userDataInput[0][0] = putNum;
+			                #if 0
+			                //if(userDataInput[0][0]	== 0)			//motor_0
+			                if(motor_x == 0U)
+			                {
+			                	//userDataInput[1][0] = putNum;	//start_stop/speedCmd
+			                }
+							//else //if(userDataInput[0][0]	== 1)	//motor_1
+							else //if(motor_x == 1U)
+							{
+			                	//userDataInput[1][0] = putNum;	//start_stop/speedCmd
+			                }
+			                #endif
+			                userDataInput[0][0] = putNum;	//start_stop/speedCmd
 			                goAhead = true;
 			            }
 			            else
@@ -528,41 +523,90 @@ void GUI_Call(void)
 
 		if(state == 0U)
 		{
-			if(userDataInput[0][0] == 1U)		//start/stop
+			#if 1
+			//if(userDataInput[0][0]	== 0)	//motor_0
+			if(motor_x == 0U)
 			{
-				UART_GotoXY(1, 1);
-				Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
-			    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
-			    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
-
-				UART_GotoXY(5, 1);
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.0 - Start/Stop Motor \r\n");
-				
-				UART_GotoXY(7, 1);
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor \r\n");
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor \r\n");
-				
-				UART_GotoXY(10, 1);	
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
-				UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+				//if(userDataInput[1][0] == 1U)		//start/stop
+				if(userDataInput[0][0] == 1U)		//start/stop
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+	
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.0 - Start/Stop Motor_0 \r\n");
+					
+					UART_GotoXY(7, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start Motor_0 \r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop Motor_0 \r\n");
+					
+					UART_GotoXY(10, 1);	
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
+					UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+				}
+				//else if(userDataInput[1][0] == 2U)	//speedCmd
+				else if(userDataInput[0][0] == 2U)	//speedCmd
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+	
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.1 - speedCmd \r\n");
+	
+					UART_GotoXY(7, 1);	
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd for Motor_0 \r\n");
+					
+					UART_GotoXY(10, 1);		//go to line # 10 to take input from the user
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+					UART_GotoXY(10, 16);	
+				}
 			}
-			else if(userDataInput[0][0] == 2U)	//speedCmd
+			//else //if(userDataInput[0][0]	== 1)	//motor_1
+			else //if(motor_x == 1U)
 			{
-				UART_GotoXY(1, 1);
-				Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
-			    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
-			    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
-
-				UART_GotoXY(5, 1);
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.1 - speedCmd \r\n");
-
-				UART_GotoXY(7, 1);	
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd \r\n");
-				
-				UART_GotoXY(10, 1);		//go to line # 10 to take input from the user
-				Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
-				UART_GotoXY(10, 16);	
+				//if(userDataInput[1][0] == 1U)		//start/stop
+				if(userDataInput[0][0] == 1U)		//start/stop
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+	
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.0 - Start/Stop Motor \r\n");
+					
+					UART_GotoXY(7, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start motor Motor_1\r\n");
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop motor Motor_1\r\n");
+					
+					UART_GotoXY(10, 1);	
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
+					UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+				}
+				//else if(userDataInput[1][0] == 2U)	//speedCmd
+				else if(userDataInput[0][0] == 2U)	//speedCmd
+				{
+					UART_GotoXY(1, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");			//line # 1
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI\r\n");
+				    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************\r\n");
+	
+					UART_GotoXY(5, 1);
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.1 - speedCmd \r\n");
+	
+					UART_GotoXY(7, 1);	
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd Motor_1\r\n");
+					
+					UART_GotoXY(10, 1);		//go to line # 10 to take input from the user
+					Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: \r\n");
+					UART_GotoXY(10, 16);	
+				}
 			}
+			#endif
 				
 			goAhead = false;
 			state = 1U;
@@ -578,34 +622,80 @@ void GUI_Call(void)
 				
 					sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
 					
-					if(userDataInput[0][0] == 1U)	//start/stop
+					#if 1
+					//if(userDataInput[0][0] == 0U)	//motor_0
+					if(motor_x == 0U)
 					{
-						if(getNum == 1U || getNum == 2U)
+						//if(userDataInput[1][0] == 1U)	//start/stop
+						if(userDataInput[0][0] == 1U)	//start/stop
 						{
-							putNum = getNum;
-							sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
-							userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
-							goAhead = true;
+							if(getNum == 1U || getNum == 2U)
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userDataInput[2][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
 						}
-						else 
+						//else if(userDataInput[1][0] == 2U)	//speedRef 
+						else if(userDataInput[0][0] == 2U)	//speedRef 
 						{
-							strcpy(putString, "invalid input");
+							if(getNum)	//if non-Zero
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userDataInput[2][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
 						}
 					}
-					else if(userDataInput[0][0] == 2U)	//speedRef 
+					//else //if(userDataInput[0][0] == 1U)	//motor_1
+					else //if(motor_x == 1U)
 					{
-						if(getNum)	//if non-Zero
+						//if(userDataInput[1][0] == 1U)	//start/stop
+						if(userDataInput[0][0] == 1U)	//start/stop
 						{
-							putNum = getNum;
-							sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
-							userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
-							goAhead = true;
+							if(getNum == 1U || getNum == 2U)
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userDataInput[2][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
 						}
-						else 
+						//else if(userDataInput[1][0] == 2U)	//speedRef 
+						else if(userDataInput[0][0] == 2U)	//speedRef 
 						{
-							strcpy(putString, "invalid input");
+							if(getNum)	//if non-Zero
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								//userDataInput[2][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								userDataInput[1][0] = getNum;			//userDataInput[menuLevel][0] = getNum;
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
 						}
 					}
+					#endif
 					
 					charToBeXmitted = strlen(putString);
 					state = 2U;
@@ -660,57 +750,97 @@ void GUI_Call(void)
 		{
 			if(init == 0U)	//menu specific
 			{
-				if(userDataInput[0][0] == 1U)			//start/stop
+				//if(userDataInput[0][0] == 0U)			//motor_0
+				if(motor_x == 0U)
 				{
-					if(userDataInput[1][0] == 1U)		//start
+					//if(userDataInput[1][0] == 1U)			//start/stop
+					if(userDataInput[0][0] == 1U)			//start/stop
 					{
+						//if(userDataInput[2][0] == 1U)		//start
+						if(userDataInput[1][0] == 1U)		//start
+						{
+							m[0].speedDesired 	= 0.9f;
+							m[0].speedCmd 		= speedStart;
+							m[0].speedInc		= 0.05f;
+							m[0].speedDec		= 0.05f;
+							m[0].fullThrotole 	= false;
+							m[0].startMotor 	= true;
+							
+							emStop[0] = false;
+						}
+						//else if(userDataInput[2][0] == 2U)	//stop
+						else if(userDataInput[1][0] == 2U)	//stop
+						{
+							m[0].startMotor = false;
+							
+							emStop[0] = true;
+						}
+					}
+					//else if(userDataInput[1][0] == 2U)		//speedCmd
+					else if(userDataInput[0][0] == 2U)		//speedCmd
+					{
+						//if(userDataInput[2][0] >= 1507U)
+							//userDataInput[2][0] = 1507U;
+						if(userDataInput[1][0] >= 1507U)
+							userDataInput[1][0] = 1507U;
+						
 						m[0].speedDesired 	= 0.9f;
-						m[0].speedCmd 		= speedStart;
-						m[0].speedInc		= 0.05f;
-						m[0].speedDec		= 0.05f;
+						m[0].speedCmd 		= (float)userDataInput[1][0]/1675.00;
+						m[0].speedInc		= 0.075f;
+						m[0].speedDec		= 0.1f;
 						m[0].fullThrotole 	= false;
 						m[0].startMotor 	= true;
 						
+						emStop[0] = false;
+					}
+				}
+				//else //if(userDataInput[0][0] == 1U)		//motor_1
+				else //if(motor_x == 1U)
+				{
+					//if(userDataInput[1][0] == 1U)			//start/stop
+					if(userDataInput[0][0] == 1U)			//start/stop
+					{
+						//if(userDataInput[2][0] == 1U)		//start
+						if(userDataInput[1][0] == 1U)		//start
+						{
+							m[1].speedDesired 	= 0.9f;
+							m[1].speedCmd 		= speedStart;
+							m[1].speedInc		= 0.025f;
+							m[1].speedDec		= 0.075f;
+							m[1].fullThrotole 	= false;
+							m[1].startMotor 	= true;
+							
+							emStop[1] = false;
+						}
+						//else if(userDataInput[2][0] == 2U)	//stop
+						else if(userDataInput[1][0] == 2U)	//stop
+						{
+							m[1].startMotor = false;
+							
+							emStop[1] = true;
+						}
+					}
+					//else if(userDataInput[1][0] == 2U)		//speedCmd
+					else if(userDataInput[0][0] == 2U)		//speedCmd
+					{
+						//if(userDataInput[2][0] >= 1507U)
+							//userDataInput[2][0] = 1507U;
+						
+						if(userDataInput[1][0] >= 1507U)
+							userDataInput[1][0] = 1507U;
+						
 						m[1].speedDesired 	= 0.9f;
-						m[1].speedCmd 		= speedStart;
-						m[1].speedInc		= 0.025f;
+						m[1].speedCmd 		= (float)userDataInput[1][0]/1675.00;
+						m[1].speedInc		= 0.1f;
 						m[1].speedDec		= 0.075f;
 						m[1].fullThrotole 	= false;
 						m[1].startMotor 	= true;
 						
-						emStop[0] = emStop[1] = false;
+						emStop[1] = false;
 					}
-					else if(userDataInput[1][0] == 2U)	//stop
-					{
-						//m[0].speedDesired = 0.0f;
-						//m[1].speedDesired = 0.0f;
-						m[0].startMotor 	= false;
-						m[1].startMotor 	= false;
-					}
-				}
-				else if(userDataInput[0][0] == 2U)		//speedCmd
-				{
-					if(userDataInput[1][0] >= 1507U)
-						userDataInput[1][0] = 1507U;
-					
-					m[0].speedDesired 	= 0.9f;
-					m[0].speedCmd 		= (float)userDataInput[1][0]/1675.00;
-					m[0].speedInc		= 0.075f;
-					m[0].speedDec		= 0.1f;
-					m[0].fullThrotole 	= false;
-					m[0].startMotor 	= true;
-					
-					m[1].speedDesired 	= 0.9f;
-					m[1].speedCmd 		= (float)userDataInput[1][0]/1675.00;
-					m[1].speedInc		= 0.1f;
-					m[1].speedDec		= 0.075f;
-					m[1].fullThrotole 	= false;
-					m[1].startMotor 	= true;
-					
-					emStop[0] = emStop[1] = false;
 				}
 
-				m[0].gearUp = 0U;	
+				m[0].gearUp = m[1].gearUp = 0U;
 				init = 1U;
 			}
 			else if(init == 1U)	//para-disp
@@ -785,20 +915,22 @@ void GUI_Call(void)
 					
 					if (sscanf(getString, "%lu", &getNum) == 1)	//string to integer 
 					{
-						if (getNum == 0U)
+						if (getNum == 0U)	//Emergency-Stop req for motor_0
 						{
 							strcpy(putString, "Emergency-Stop req ");
 							charToBeXmitted = (uint8_t)strlen(putString);
-							m[0].speedCmd = 0.0f;
+							//m[0].speedCmd = 0.0f;
+							m[0].startMotor = false;
 							emStop[0] = true;
 							goBackMainMenu = true;
 							goAhead = 1U;
 						}
-						else if (getNum == 1U)
+						else if (getNum == 1U)	//Emergency-Stop req for motor_1
 						{
 							strcpy(putString, "Emergency-Stop req ");
 							charToBeXmitted = (uint8_t)strlen(putString);
-							m[1].speedCmd = 0.0f;
+							//m[1].speedCmd = 0.0f;
+							m[1].startMotor = false;
 							emStop[1] = true;
 							goBackMainMenu = true;
 							goAhead = 1U;
@@ -1054,18 +1186,18 @@ void GUI_Call(void)
 				{
 					if(goAhead == 0U)
 					{
-						UART_GotoXY(20, 35); //to erase invalid-input, so start from (20, 35)
+						UART_GotoXY(22, 35);//(20, 35); //to erase invalid-input, so start from (20, 35)
 						Cy_SCB_UART_PutString(USER_UART_HW, "                       ");
 										   				   //1234567890123456789012345
 					}
 						
-					UART_GotoXY(20, 35); //for next iteration
+					UART_GotoXY(22, 35);//(20, 35); //for next iteration
 					state = 5U;
 				}
 			}
 			else 
 			{
-				UART_GotoXY(20, 35); //for next iteration
+				UART_GotoXY(22, 35);//(20, 35); //for next iteration
 				state = 5U;
 			}
 		}
@@ -1075,8 +1207,10 @@ void GUI_Call(void)
 			{
 				charReceived 	= 0U;
 				charToBeXmitted = 0U;
-				memset(getString, 0U, sizeof(getString));
-				memset(putString, 0U, sizeof(putString));
+				
+				memset(getString, 		0U, sizeof(getString));
+				memset(putString, 		0U, sizeof(putString));
+				memset(userDataInput, 	0U, sizeof(userDataInput));
 
 				goAhead = false;
 				userInput = false;

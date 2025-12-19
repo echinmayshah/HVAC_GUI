@@ -85,7 +85,7 @@
 typedef struct
 {
 	bool startMotor;
-	bool stopMotor;
+	//bool stopMotor;
 	bool fullThrotole;
 
 	float speedDesired;	

@@ -393,16 +393,6 @@ static void BrakeBootISR0(MOTOR_t *motor_ptr)
 	PARAMS_t* params_ptr = motor_ptr->params_ptr;
 #endif
 	
-	#if 0
-		bool i = (bool)motor_ptr->motor_instance;
-		
-		if(m[i].startMotor == false &&	\
-			m[i].stopMotor == false)
-		{
-			m[i].tickISR++;
-		}
-	#endif
-		
 	StopWatchRun(&sm_ptr->vars.brake_boot.timer);
 #if defined(CTRL_METHOD_RFO) || defined(CTRL_METHOD_TBC)
     if (params_ptr->sys.fb.mode == Hall)

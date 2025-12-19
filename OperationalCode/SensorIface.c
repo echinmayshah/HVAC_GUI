@@ -461,8 +461,7 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 			if(	(motor[i].faults_ptr->flags.sw.reg == 0U) && \
 				 emStop[i] == false)
 			{
-				if(m[i].startMotor == true && \
-					m[i].stopMotor == false)
+				if(m[i].startMotor == true)
 				{
 					if(m[i].gearUp == 0U)
 					{
@@ -522,7 +521,6 @@ void SENSOR_IFACE_RunISR1(MOTOR_t *motor_ptr)
 							{
 								m[i].fullThrotole 	= false;
 								m[i].startMotor 	= false;
-								m[i].stopMotor 		= true;
 								
 								if(i == 0U)	//LED indication is for motor_0 only
 								{
