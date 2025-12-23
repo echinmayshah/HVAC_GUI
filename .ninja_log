@@ -503,3 +503,16 @@
 632	4151	7878502841666766	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
 36	579	7878505265082531	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/GUI.o	3e165023186467db
 579	839	7878505270518243	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+134	2184	7881710536872619	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/GUI.o	3e165023186467db
+2185	6759	7881710557377108	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+35	648	7881713528270874	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/GUI.o	3e165023186467db
+648	927	7881713534412847	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+41	654	7881724734761362	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/main.o	7884f16a14ea2362
+36	681	7881724734708237	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/GUI.o	3e165023186467db
+681	1073	7881724741160280	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+41	423	7881727435417660	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/main.o	7884f16a14ea2362
+423	698	7881727439239636	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+34	381	7881729539254417	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/main.o	7884f16a14ea2362
+381	650	7881729542720592	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4
+35	576	7881735334747549	E:/HVAC/firmware/MotorControl/spam/2025.11.24_DualMC_v0/DUAL_MOTOR_DEMO/build/Custom/local/GUI.o	3e165023186467db
+576	869	7881735340168342	build/APP_KIT_PSC3M5_CC2/Custom/mtb-example-ce241420-dual-motor-control.elf	a53356ed27f03ad4

@@ -523,7 +523,7 @@ void GUI_Call(void)
 
 		if(state == 0U)
 		{
-			#if 1
+			#if 0
 			//if(userDataInput[0][0]	== 0)	//motor_0
 			if(motor_x == 0U)
 			{
@@ -607,6 +607,58 @@ void GUI_Call(void)
 				}
 			}
 			#endif
+			
+			#if 1
+				UART_GotoXY(1, 1);
+				Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");			//line # 1
+			    Cy_SCB_UART_PutString(USER_UART_HW, "# HVAC Motor Control GUI \r\n");
+			    Cy_SCB_UART_PutString(USER_UART_HW, "# ************************************************************ \r\n");
+
+				if(motor_x == 0U)
+				{
+					if(userDataInput[0][0] == 1U)
+					{
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.0 - Start/Stop Motor_0 \r\n");
+						
+						UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start Motor_0 \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop Motor_0 \r\n");
+					}
+					else if(userDataInput[0][0] == 2U)
+					{
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.1 - speedCmd \r\n");
+		
+						UART_GotoXY(7, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd for Motor_0 \r\n");
+					}
+				}
+				else if(motor_x == 1U)
+				{
+					if(userDataInput[0][0] == 1U)
+					{
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.0 - Start/Stop Motor_1 \r\n");
+						
+						UART_GotoXY(7, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 1 to start Motor_1 \r\n");
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter 2 to stop Motor_1 \r\n");
+					}
+					else if(userDataInput[0][0] == 2U)
+					{
+						UART_GotoXY(5, 1);
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Page_1.1 - speedCmd \r\n");
+		
+						UART_GotoXY(7, 1);	
+						Cy_SCB_UART_PutString(USER_UART_HW, "# Enter speedCmd for Motor_1 \r\n");
+					}
+				}
+				
+				UART_GotoXY(10, 1);	
+				Cy_SCB_UART_PutString(USER_UART_HW, "# Your input?: ");
+				UART_GotoXY(10, 16);	//go to line # 10 to take input from user
+			#endif
 				
 			goAhead = false;
 			state = 1U;
@@ -622,7 +674,7 @@ void GUI_Call(void)
 				
 					sscanf(getString, "%lu", &getNum);				//str to int (getString to getNum)
 					
-					#if 1
+					#if 0
 					//if(userDataInput[0][0] == 0U)	//motor_0
 					if(motor_x == 0U)
 					{
@@ -697,6 +749,40 @@ void GUI_Call(void)
 					}
 					#endif
 					
+					#if 1
+					if( (motor_x == 0U) || (motor_x == 1U)	)	//this if can be commented
+					{
+						if(userDataInput[0][0] == 1U)	//start/stop
+						{
+							if(getNum == 1U || getNum == 2U)
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								userDataInput[1][0] = getNum;			
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
+						}
+						else if(userDataInput[0][0] == 2U)	//speedRef 
+						{
+							if(getNum)	//if non-Zero
+							{
+								putNum = getNum;
+								sprintf(putString, "%lu", putNum);		//int to str (putNum to putString)
+								userDataInput[1][0] = getNum;			
+								goAhead = true;
+							}
+							else 
+							{
+								strcpy(putString, "invalid input");
+							}
+						}
+					}
+					#endif
+					
 					charToBeXmitted = strlen(putString);
 					state = 2U;
 				}
@@ -750,6 +836,7 @@ void GUI_Call(void)
 		{
 			if(init == 0U)	//menu specific
 			{
+				#if 0
 				//if(userDataInput[0][0] == 0U)			//motor_0
 				if(motor_x == 0U)
 				{
@@ -839,6 +926,49 @@ void GUI_Call(void)
 						emStop[1] = false;
 					}
 				}
+				#endif
+				
+				#if 1
+				if( (motor_x == 0U) || (motor_x == 1U) )	//this if can be commented
+				{
+					bool i = motor_x;
+					if(userDataInput[0][0] == 1U)			//start/stop
+					{
+						if(userDataInput[1][0] == 1U)		//start
+						{
+							m[i].speedDesired 	= 0.9f;
+							m[i].speedCmd 		= speedStart;
+							m[i].speedInc		= 0.05f;
+							m[i].speedDec		= 0.05f;
+							m[i].fullThrotole 	= false;
+							m[i].startMotor 	= true;
+							
+							emStop[i] = false;
+						}
+						//else if(userDataInput[2][0] == 2U)	//stop
+						else if(userDataInput[1][0] == 2U)	//stop
+						{
+							m[i].startMotor = false;
+							
+							emStop[i] = true;
+						}
+					}
+					else if(userDataInput[0][0] == 2U)		//speedCmd
+					{
+						if(userDataInput[1][0] >= 1507U)
+							userDataInput[1][0] = 1507U;
+						
+						m[i].speedDesired 	= 0.9f;
+						m[i].speedCmd 		= (float)userDataInput[1][0]/1675.00;
+						m[i].speedInc		= 0.075f;
+						m[i].speedDec		= 0.1f;
+						m[i].fullThrotole 	= false;
+						m[i].startMotor 	= true;
+						
+						emStop[i] = false;
+					}
+				}
+				#endif
 
 				m[0].gearUp = m[1].gearUp = 0U;
 				init = 1U;
